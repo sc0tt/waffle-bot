@@ -1,7 +1,6 @@
 <?php
 
-class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract
-{
+class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract {
     /* DB Settings - Uses Postgresql */
     private $db_host;
     private $db_user;
@@ -30,8 +29,7 @@ class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract
         $this->lmt = rand(100,200);
     }
 
-    public function onLoad()
-    {
+    public function onLoad() {
         $plugins = $this->getPluginHandler();
         $plugins->getPlugin('Message');
         $plugins->getPlugin('Command');
@@ -57,10 +55,8 @@ class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract
 		$this->dbh = new PDO("pgsql:host=".$this->db_host.";dbname=".$this->db_name, $this->db_user, $this->db_user_pass);
     }
     
-    private function in_arrayi($needle, $haystack)
-    {
-        for($h = 0 ; $h < count($haystack) ; $h++)
-        {
+    private function in_arrayi($needle, $haystack) {
+        for($h = 0 ; $h < count($haystack) ; $h++) {
             $haystack[$h] = strtolower($haystack[$h]);
         }
         return in_array(strtolower($needle),$haystack);
@@ -116,28 +112,28 @@ class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract
         $nick = $this->getEvent()->getNick();
         $msg = $this->plugins->message->getMessage();
   
-        if($this->startsWith(strtolower($msg), "waffle-bot") && strlen($msg) > 11) //Personalized message
-        {
+        //Personalized message
+        if($this->startsWith(strtolower($msg), "waffle-bot") && strlen($msg) > 11) {
             $this->doPrivmsg($source, "$nick: " . $this->personal_msg(substr($msg,11))); //Sends all text past "waffle-bot "
         }
-        else if(strtolower(trim($msg)) == "waffle-bot") //Otherwise, check to see if it's a regular invoke
-        { 
+        //Otherwise, check to see if it's a regular invoke
+        else if(strtolower(trim($msg)) == "waffle-bot") { 
             $msg = $this->random_string();
             $this->doPrivmsg($source, $msg);
-            if(rand(1,32) == 17) // 1 in 32 chance of tweeting/posting
-            {
+            
+            // 1 in 32 chance of tweeting/posting
+            if(rand(1,32) == 17) {
                 $this->doTweet($msg); //Tweet only the above message
                 $this->doReddit($msg,$this->personal_msg($msg)); //Make a reddit post with the above message as the title, then make a body based off of the title
             }
         }
-        else //Read data!
-        {
-            if(!$this->in_arrayi(strtolower($nick), $this->config['ai.settings']['ignore'])) //Checks to make sure the user is not on the ignore list
-            {
+        //Read data!
+        else {
+            //Checks to make sure the user is not on the ignore list
+            if(!$this->in_arrayi(strtolower($nick), $this->config['ai.settings']['ignore'])) {
                 $this->readData($nick, $msg);
             }
         }
-        
         $this->randomMessage($source);
     }
     
@@ -152,8 +148,7 @@ class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract
         $connection->post('statuses/update', array('status' => $msg)); //TODO: check for > 140 characters and do something.
     }
     
-    private function doReddit($title, $body)
-    {
+    private function doReddit($title, $body) {
         if(!$rEnabled)
             return;
         $rurl = "http://www.reddit.com/api/login/".$this->ruser;
@@ -195,20 +190,17 @@ class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract
         }
     }
     
-    private function lastN($str, $num)
-    {
+    private function lastN($str, $num) {
         $arr = explode(" ", $str);
         $pos = count($arr) -1;
         $out = "";
-        for($i = $pos; $i > (count($arr)-1) - $num; $i--)
-        {
+        for($i = $pos; $i > (count($arr)-1) - $num; $i--) {
             $out = " ". $arr[$i] . $out;
         }
         return trim($out);
     }
     
-    private function random_string()
-    {
+    private function random_string() {
         $sth = $this->dbh->prepare("SELECT key FROM pairs ORDER BY RANDOM() LIMIT 1"); //Gets random starting word.
         $sth->execute();
         $data = $sth->fetchColumn();
@@ -229,8 +221,7 @@ class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract
         return ucfirst(trim($output));
     }
     
-    private function personal_msg($seed)
-    {
+    private function personal_msg($seed) {
         $seed = strtolower($seed);
         $seed = preg_replace('/\s{2,}/', ' ', $seed); //Trims 
         $seed = trim($seed);
@@ -238,8 +229,8 @@ class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract
         $seeds = explode(" ", $seed);
         shuffle($seeds);
         
-        for($i = 0; $i < count($seeds); $i++) //This function will go through all possible seeds, the first possible one it takes.
-        {
+        //This function will go through all possible seeds, the first possible one it takes.
+        for($i = 0; $i < count($seeds); $i++) {
             $seed = $seeds[$i]; //Pick a random seed word.
             $sth = $this->dbh->prepare("SELECT key FROM pairs WHERE lower(key) LIKE ? ORDER BY RANDOM() LIMIT 1");
             $sth->execute(array("% ".strtolower($seed)." %"));
@@ -252,7 +243,6 @@ class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract
             return $this->random_string();
             
         $output = $data; //Begin the output chain
-
         $cont = $this->dbh->prepare("SELECT value FROM pairs WHERE lower(key) LIKE ? ORDER BY RANDOM() LIMIT 1");
 
         do {
@@ -268,14 +258,12 @@ class Phergie_Plugin_Ai extends Phergie_Plugin_Abstract
     }
 	
 	// http://stackoverflow.com/a/834355
-    private function startsWith($haystack, $needle)
-    {
+    private function startsWith($haystack, $needle) {
         $length = strlen($needle);
         return (substr($haystack, 0, $length) === $needle);
     }
 
-    private function endsWith($haystack, $needle)
-    {
+    private function endsWith($haystack, $needle) {
         $length = strlen($needle);
         $start  = $length * -1;
         return (substr($haystack, $start) === $needle);
